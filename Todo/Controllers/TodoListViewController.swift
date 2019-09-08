@@ -7,33 +7,24 @@
 //
 
 import UIKit
+import CoreData
 
 class TodoListViewController: UITableViewController {
     
-    let defaults = UserDefaults.standard
-
     var itemArray = [Item]()
+    
+    var selectedCategory : Category? {
+        didSet{
+            loadItems()
+        }
+    }
+    
+    let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
-//        let item1 = Item()
-//        item1.title = "Watch Movie"
-//        itemArray.append(item1)
-//        
-//        let item2 = Item()
-//        item2.title = "Read book"
-//        itemArray.append(item2)
-//        
-//        let item3 = Item()
-//        item3.title = "save world"
-//        itemArray.append(item3)
-//        
-//        if let items = defaults.array(forKey: "TodoListArray") as? [Item] {
-//            itemArray = items
-//        }
-
-        // Do any additional setup after loading the view.
+        print(FileManager.default.urls(for: .documentDirectory, in: .userDomainMask))
     }
     
     
@@ -66,6 +57,8 @@ class TodoListViewController: UITableViewController {
         
         tableView.deselectRow(at: indexPath, animated: true)
     }
+    
+    // MARK: - Add New Items
 
     @IBAction func addButtonPressed(_ sender: UIBarButtonItem) {
         var textField = UITextField()
@@ -73,15 +66,14 @@ class TodoListViewController: UITableViewController {
         let alert = UIAlertController(title: "Add New Todo Item", message: "", preferredStyle: .alert)
         
         let action = UIAlertAction(title: "Add Item", style: .default) { (action) in
-            let newItem = Item()
+            
+            let newItem = Item(context: self.context)
             newItem.title = textField.text!
-            print(newItem)
+            newItem.done = false
+            newItem.parentCategory = self.selectedCategory
             self.itemArray.append(newItem)
             
-            //self.defaults.set(self.itemArray, forKey: "TodoListArray")
-            UserDefaults.standard.set(newItem, forKey: "TodoListArray")
-            
-            self.tableView.reloadData()
+            self.saveItems()
         }
         
         alert.addTextField { (alertTextField) in
@@ -92,6 +84,33 @@ class TodoListViewController: UITableViewController {
         alert.addAction(action)
         
         present(alert, animated: true, completion: nil)
+    }
+    
+    // MARK: Model Manupulation Methods
+    func saveItems() {
+        do {
+            try context.save()
+        } catch {
+            print("Error saving context \(error)")
+        }
+        self.tableView.reloadData()
+    }
+    
+    func loadItems(with request: NSFetchRequest<Item> = Item.fetchRequest(), predicate: NSPredicate? = nil) {
+        let categoryPredicate = NSPredicate(format: "parentCategory.name MATCHES %@", selectedCategory!.name!)
+        
+        if let additionalPredicate = predicate {
+            request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [categoryPredicate, additionalPredicate])
+        } else {
+            request.predicate = categoryPredicate
+        }
+        
+        do {
+            itemArray = try context.fetch(request)
+        } catch {
+            print("Error fetching data from context \(error)")
+        }
+        tableView.reloadData()
     }
     
 }
