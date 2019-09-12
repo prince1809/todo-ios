@@ -87,6 +87,9 @@
                             </connections>
                         </barButtonItem>
                     </navigationItem>
+                    <connections>
+                        <outlet property="searchBar" destination="LGP-gI-LIz" id="FHC-Ij-0P8"/>
+                    </connections>
                 </tableViewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="VoB-Wd-OWs" userLabel="First Responder" sceneMemberID="firstResponder"/>
             </objects>
